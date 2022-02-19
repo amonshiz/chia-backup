@@ -1,0 +1,72 @@
+#!/usr/bin/bash
+#set -x
+
+CHIA=/usr/lib/chia-blockchain/resources/app.asar.unpacked/daemon/chia
+CHIA_STOP_PARAMETERS='stop -d all'
+CHIA_START_PARAMETERS='start farmer'
+
+#DATABASE_NAME=blockchain_v2_mainnet.sqlite
+#DATABASE_NAME=test_file.txt
+SOURCE=src
+CURRENT_SOURCE_DIRECTORY=/home/chiapi/working-test
+CURRENT_SOURCE_PATH="${CURRENT_SOURCE_DIRECTORY}"/"${SOURCE}"
+#CURRENT_DATABASE_PATH=/home/chiapi/.chia/mainnet/db/$DATABASE_NAME
+#CURRENT_DATABASE_PATH=/home/chiapi/$DATABASE_NAME
+BACKUP_DESTINATION_DIRECTORY=/home/chiapi/working-test/dst
+BACKUP_DESTINATION_PATH="$BACKUP_DESTINATION_DIRECTORY"/"${SOURCE}".1
+#DESTINATION_BACKUP_DIRECTORY=/media/chiapi/ChiaPlots2/db-backups
+#DESTINATION_BACKUP_PATH=$DESTINATION_BACKUP_DIRECTORY/"${DATABASE_NAME}".1
+
+NUMBER_OF_BACKUPS=3
+
+cat<<EOF
+Beginning to backup Chia blockchain database
+EOF
+
+CHIA_PROCESSES=$(ps auxwwww | tr -s ' ' | cut -d ' ' -f 11 | grep chia | grep -v chiapi | grep -e "^chia_")
+cat<<EOF
+$CHIA_PROCESSES
+EOF
+
+if [[ -z "${CHIA_PROCESSES}" ]]; then
+    echo 'No Chia processes present'
+else
+    echo 'There are Chia processes running so shutting down Chia'
+    $CHIA $CHIA_STOP_PARAMETERS
+fi
+
+# Move any existing backups one over
+for ((bn=$NUMBER_OF_BACKUPS;bn>1;bn-=1)); do
+    PREV_NUMBER=$(($bn-1))
+    CURRENT_BACKUP_NAME="${BACKUP_DESTINATION_DIRECTORY}/${SOURCE}.${PREV_NUMBER}"
+    #CURRENT_BACKUP_NAME="${DESTINATION_BACKUP_DIRECTORY}/${DATABASE_NAME}.${PREV_NUMBER}"
+    NEXT_BACKUP_NAME="${BACKUP_DESTINATION_DIRECTORY}/${SOURCE}.${bn}"
+    #NEXT_BACKUP_NAME="${DESTINATION_BACKUP_DIRECTORY}/${DATABASE_NAME}.${bn}"
+    echo "Checking if ${CURRENT_BACKUP_NAME} exists"
+    if [[ -e "${CURRENT_BACKUP_NAME}" ]]; then
+    	echo "It does! Moving to ${NEXT_BACKUP_NAME}"
+        mv "${CURRENT_BACKUP_NAME}" "${NEXT_BACKUP_NAME}"
+	echo "Moved!"
+    else
+        echo "No file at ${CURRENT_BACKUP_NAME} to move"
+    fi
+done
+
+# Copy the current file now
+cat<<EOF
+Copying ${CURRENT_SOURCE_PATH} to ${DESTINATION_BACKUP_PATH}
+#Copying $CURRENT_DATABASE_PATH to $DESTINATION_BACKUP_PATH
+EOF
+
+tar -cvf "${BACKUP_DESTINATION_PATH}" -C "${CURRENT_SOURCE_DIRECTORY}" "${SOURCE}"
+#cp "$CURRENT_SOURCE_PATH" "${BACKUP_DESTINATION_PATH}"
+#cp "$CURRENT_DATABASE_PATH" "$DESTINATION_BACKUP_PATH"
+cat<<EOF
+Copied!
+EOF
+
+cat<<EOF
+Restart Chia
+EOF
+
+#$CHIA $CHIA_START_PARAMETERS
