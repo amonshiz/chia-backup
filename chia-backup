@@ -1,9 +1,19 @@
 #!/usr/bin/bash
-#set -x
+set -ex
+
+if [[ -z "${PASSPHRASE_FILE}" ]]; then
+    echo "Must set the PASSPHRASE_FILE env variable"
+    exit 1
+fi
+
+if [[ ! -f "${PASSPHRASE_FILE}" ]]; then
+    echo "PASSPHRASE_FILE must exist"
+    exit 2
+fi
 
 CHIA=/usr/lib/chia-blockchain/resources/app.asar.unpacked/daemon/chia
-CHIA_STOP_PARAMETERS='stop -d all'
-CHIA_START_PARAMETERS='start farmer'
+CHIA_STOP_PARAMETERS="stop -d all"
+CHIA_START_PARAMETERS="--passphrase-file ${PASSPHRASE_FILE} start farmer"
 
 SOURCE=db
 CURRENT_SOURCE_DIRECTORY=/home/chiapi/.chia/mainnet
