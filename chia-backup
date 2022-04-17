@@ -1,24 +1,31 @@
 #!/usr/bin/bash
 set -ex
 
-if [[ -z "${PASSPHRASE_FILE}" ]]; then
-    echo "Must set the PASSPHRASE_FILE env variable"
-    exit 1
-fi
+#if [[ -z "${PASSPHRASE_FILE}" ]]; then
+#    echo "Must set the PASSPHRASE_FILE env variable"
+#    exit 1
+#fi
+#
+#if [[ ! -f "${PASSPHRASE_FILE}" ]]; then
+#    echo "PASSPHRASE_FILE must exist"
+#    exit 2
+#fi
 
-if [[ ! -f "${PASSPHRASE_FILE}" ]]; then
-    echo "PASSPHRASE_FILE must exist"
-    exit 2
-fi
+USER=$(whoami)
 
 CHIA=/usr/lib/chia-blockchain/resources/app.asar.unpacked/daemon/chia
 CHIA_STOP_PARAMETERS="stop -d all"
-CHIA_START_PARAMETERS="--passphrase-file ${PASSPHRASE_FILE} start farmer"
+#CHIA_START_PARAMETERS="--passphrase-file ${PASSPHRASE_FILE} start farmer"
+CHIA_START_PARAMETERS="start farmer"
 
-SOURCE=db
-CURRENT_SOURCE_DIRECTORY=/home/chiapi/.chia/mainnet
+if [[ -z "${SOURCE}" ]]; then
+    echo "No SOURCE provided so backing up blockchain db"
+    SOURCE=db
+fi
+
+CURRENT_SOURCE_DIRECTORY="/home/${USER}/.chia/mainnet"
 CURRENT_SOURCE_PATH="${CURRENT_SOURCE_DIRECTORY}"/"${SOURCE}"
-BACKUP_DESTINATION_DIRECTORY=/media/chiapi/ChiaPlots2/db-backups
+BACKUP_DESTINATION_DIRECTORY="/media/${USER}/ChiaPlots2/db-backups"
 BACKUP_DESTINATION_PATH="$BACKUP_DESTINATION_DIRECTORY"/"${SOURCE}".1
 
 NUMBER_OF_BACKUPS=3
@@ -28,7 +35,7 @@ Beginning to backup Chia blockchain database
 EOF
 
 set +e
-CHIA_PROCESSES=$(ps auxwwww | tr -s ' ' | cut -d ' ' -f 11 | grep chia | grep -v chiapi | grep -E "^chia_")
+CHIA_PROCESSES=$(ps auxwwww | tr -s ' ' | cut -d ' ' -f 11 | grep chia | grep -v "${USER}" | grep -E "^chia_")
 cat<<EOF
 $CHIA_PROCESSES
 EOF
